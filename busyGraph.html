@@ -1,0 +1,195 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<title>pixi.js example 6 Interactivity</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			background-color: #000000;
+		}
+	
+		#help{
+			position: absolute;
+			z-index: 20;
+			color: black;
+			top: 20px;
+			left: 120px;
+		}
+	</style>
+
+
+
+	<script src="pixi.min.js"></script>
+</head>
+<body>
+<script>
+	
+	
+	
+	
+	var amountData = 10000
+	var amplitude = 100
+	var cyclesPerBuffer = 100
+	
+	var cycle = (2*Math.PI)*cyclesPerBuffer/amountData
+	var dataPoints = []
+	for ( var i = 0; i < amountData; i++ ) {
+		dataPoints.push(amplitude*Math.sin(cycle*i) + (amplitude/2)*(0.5 - Math.random()))//  + (0.5 - Math.random())
+	}
+	
+	var sceneW = 1040
+	var sceneH = 600
+	var lMargin = 20
+	var tMargin = 50
+	var delta = 2
+	var graphLineThick = 2
+	var iBlock = 0
+	
+	var startPoint = lMargin
+	var stopPoint = sceneW - lMargin
+	var zeroHeight = (sceneH - tMargin)/2 + tMargin
+	var sampleLocs =  (stopPoint - startPoint)/delta
+	var redrawDelta = 8
+	
+	
+	
+	function drawData(data,offset,N, YOffset,color) {
+		var graphics = new PIXI.Graphics();
+		
+		graphics.lineStyle(graphLineThick,(color === undefined?  0x667700 : color), 1);
+		// draw a shape
+		
+		var zshift = YOffset + zeroHeight
+		graphics.moveTo(startPoint+2,zshift);
+		
+		var mover = startPoint;
+		var j = offset;
+		for ( var i = 0; i < N; i++, j++ ) {
+			mover += delta
+			graphics.lineTo(mover, zshift - data[j]);
+		}
+		//graphics.endFill();
+		
+		graphics.lineStyle(2, 0x550000, 1);
+		graphics.moveTo(startPoint,zeroHeight);
+		graphics.lineTo(stopPoint,zeroHeight);
+		
+		return(graphics);
+	}
+	
+	
+	
+	
+	function componentToHex(c) {
+		var hex = c.toString(16);
+		return hex.length == 1 ? "0" + hex : hex;
+	}
+
+	function rgbToHex(r, g, b) {
+		return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+	}
+
+	function hexToRgb(hex) {
+		var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+		return result ? {
+			r: parseInt(result[1], 16),
+			g: parseInt(result[2], 16),
+			b: parseInt(result[3], 16)
+		} : null;
+	}
+
+	var renderer = PIXI.autoDetectRenderer(sceneW, sceneH,{backgroundColor : 0xCCFFFF});
+	document.body.appendChild(renderer.view);
+	
+	// create the root of the scene graph
+	var stage = new PIXI.Container();
+	var grphsBkgnd = new PIXI.Graphics();
+
+	// set a fill and a line style again and draw a rectangle
+	grphsBkgnd.lineStyle(2, 0x0000FF, 1);
+	grphsBkgnd.beginFill(0xFFFFEE, 1);
+	grphsBkgnd.drawRect(lMargin, tMargin, sceneW - 2*lMargin, sceneH - 2*tMargin);
+	
+//
+	stage.addChild(grphsBkgnd);
+//
+	// set a fill and line style
+	//graphics.beginFill(0xFF3300);
+	//
+	var color = 0x0000FF
+	
+	for ( var j = 0; j < 20; j++  ) {
+		var dataGraph = drawData(dataPoints,j*sampleLocs,sampleLocs,j*5,color)
+		stage.addChild(dataGraph);
+		if ( j % 2 == 0 ) {
+			color = 0xFF0909
+		} else if ( j % 3 == 0 ) {
+			color += 0x09FF09
+		} else {
+			color = 0x0000FF
+		}
+	}
+	//
+	
+	var basicText = new PIXI.Text('The Graph Title');
+	basicText.x = lMargin;
+	basicText.y = tMargin/2;
+	stage.addChild(basicText);
+
+	var reportText = new PIXI.Text('=>> ' + sampleLocs);
+	reportText.x = lMargin;
+	reportText.y = tMargin + 10;
+	stage.addChild(reportText);
+
+//var sprite = PIXI.Sprite.from(renderer.view);
+
+// Set the initial position
+//sprite.anchor.set(0.5);
+//sprite.x = app.screen.width / 2;
+//sprite.y = app.screen.height / 2;
+
+// Opt-in to interactivity
+grphsBkgnd.interactive = true;
+
+// Shows hand cursor
+grphsBkgnd.buttonMode = true;
+
+// Pointers normalize touch and mouse
+grphsBkgnd.on('pointerdown', onClick);
+
+
+	// start animating
+	animate();
+	
+	function animate() {
+		requestAnimationFrame(animate);
+		// render the root container
+		dataGraph.destroy();
+		iBlock++;
+		console.log(iBlock);
+		if ( (iBlock + 1)*redrawDelta >= amountData ) {
+			iBlock = 0
+		}
+		dataGraph = drawData(dataPoints,iBlock*redrawDelta,sampleLocs,0)
+		stage.addChild(dataGraph);
+		//
+		renderer.render(stage);
+	}
+
+
+	function onClick() {
+		dataGraph.destroy();
+		iBlock++;
+		if ( (iBlock + 1)*sampleLocs >= amountData ) {
+			iBlock = 0
+		}
+		dataGraph = drawData(dataPoints,iBlock*sampleLocs,sampleLocs)
+		stage.addChild(dataGraph);
+	}
+
+	</script>
+
+	</body>
+</html>
